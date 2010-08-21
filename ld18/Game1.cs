@@ -33,6 +33,9 @@ namespace LD18
         Texture2D texture2DEnemy1;
         DateTime stepTime = DateTime.Now;
         TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
+        Vector2 beamVector = new Vector2(422, 410);
+        float beamAngle = MathHelper.ToRadians(45);
+        float beamAngleSpin = MathHelper.ToRadians(0);
 
         public Game1()
         {
@@ -59,6 +62,8 @@ namespace LD18
         /// </summary>
         protected override void LoadContent()
         {
+            Window.Title = "MrPhil's LD18 Entry";
+
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -86,9 +91,39 @@ namespace LD18
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            KeyboardState keyboardState = Keyboard.GetState(PlayerIndex.One);
+
             // Allows the game to exit
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
+                || keyboardState.IsKeyDown(Keys.Escape))
+            {
                 this.Exit();
+            }
+
+            // Use applyies momentum to the spindle
+            if (keyboardState.IsKeyDown(Keys.C))
+            {
+                beamAngleSpin += Math.Abs(beamAngleSpin) * .2f + .001f;
+            }
+            else if (keyboardState.IsKeyDown(Keys.Z))
+            {
+                beamAngleSpin -= Math.Abs(beamAngleSpin) * .2f + .001f;
+            }
+            else
+            {
+                // Friction on track bean spindle
+                if (beamAngleSpin > 0)
+                {
+                    beamAngleSpin -= Math.Abs(beamAngleSpin) * .015f;
+                }
+                else
+                {
+                    beamAngleSpin += Math.Abs(beamAngleSpin) * .015f;
+                }
+            }
+
+            // The momentum moves the spindle
+            beamAngle += beamAngleSpin;
 
             if (stepTime < DateTime.Now)
             {
@@ -117,8 +152,8 @@ namespace LD18
             GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin();
-            spriteBatch.Draw(texture2DBeam3, new Vector2(350, 200), Color.White);
-            spriteBatch.Draw(texture2DBeam1, new Vector2(400, 200), Color.White);
+            spriteBatch.Draw(texture2DBeam3, beamVector, null, Color.White, beamAngle, new Vector2(54, 274), 1, SpriteEffects.None, 1);
+            spriteBatch.Draw(texture2DBeam, beamVector, null, Color.White, beamAngle, new Vector2(54, 274), 1, SpriteEffects.None, 1);
             spriteBatch.Draw(texture2DMotherShip, new Vector2(350, 400), Color.White);
             if (drawBeam2)
             {
