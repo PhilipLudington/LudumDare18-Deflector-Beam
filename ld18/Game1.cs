@@ -31,11 +31,14 @@ namespace LD18
         Texture2D texture2DMotherShip1;
         Texture2D texture2DMotherShip2;
         Texture2D texture2DEnemy1;
+        Texture2D texture2DBullet1;
         DateTime stepTime = DateTime.Now;
         TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
         Vector2 beamVector = new Vector2(422, 410);
         float beamAngle = MathHelper.ToRadians(45);
         float beamAngleSpin = MathHelper.ToRadians(0);
+        List<Bullet> bullets = new List<Bullet>();
+        Random random = new Random(DateTime.Now.Millisecond);
 
         public Game1()
         {
@@ -51,7 +54,15 @@ namespace LD18
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            int randomBullets = random.Next(0, 50000);
+            Bullet bullet;
+            for (int x = 0; x < randomBullets; x++)
+            {
+                bullet = new Bullet();
+                bullet.Position.X = random.Next(0, 800);
+                bullet.Position.Y = random.Next(0, 600);
+                bullets.Add(bullet);
+            }
 
             base.Initialize();
         }
@@ -73,6 +84,7 @@ namespace LD18
             texture2DBeam2 = Content.Load<Texture2D>("Beam2");
             texture2DBeam3 = Content.Load<Texture2D>("Beam3");
             texture2DEnemy1 = Content.Load<Texture2D>("Enemy1");
+            texture2DBullet1 = Content.Load<Texture2D>("Bullet");
         }
 
         /// <summary>
@@ -100,7 +112,7 @@ namespace LD18
                 this.Exit();
             }
 
-            // Use applyies momentum to the spindle
+            // Apply momentum to the spindle
             if (keyboardState.IsKeyDown(Keys.C))
             {
                 beamAngleSpin += Math.Abs(beamAngleSpin) * .2f + .001f;
@@ -140,6 +152,21 @@ namespace LD18
                 stepTime = DateTime.Now.Add(animationTime);
             }
 
+            // Bullets
+            List<Bullet> deadBullets = new List<Bullet>();
+            foreach (Bullet bullet in bullets)
+            {
+                bullet.Update();
+                if (bullet.Position.Y > 1000)
+                {
+                    deadBullets.Add(bullet);
+                }
+            }
+            foreach (Bullet bullet in deadBullets)
+            {
+                bullets.Remove(bullet);
+            }
+
             base.Update(gameTime);
         }
 
@@ -160,6 +187,12 @@ namespace LD18
                 spriteBatch.Draw(texture2DMotherShip2, new Vector2(350, 400), Color.White);
             }
             spriteBatch.Draw(texture2DEnemy1, new Vector2(50, 40), Color.White);
+            // Bullets
+            foreach (Bullet bullet in bullets)
+            {
+                spriteBatch.Draw(texture2DBullet1, bullet.Position, null, Color.White, 0.0f, new Vector2(54, 274), 0.51f, SpriteEffects.None, 1);
+            }
+
             spriteBatch.End();
 
             base.Draw(gameTime);
