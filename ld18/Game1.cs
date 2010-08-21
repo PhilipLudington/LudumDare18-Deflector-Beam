@@ -1,3 +1,5 @@
+/* All Rights Reserved. Copyright 2010 Philip Ludington */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,17 @@ namespace LD18
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        bool drawBeam2 = false;
+        Texture2D texture2DBeam;
+        Texture2D texture2DBeam1;
+        Texture2D texture2DBeam2;
+        Texture2D texture2DBeam3;
+        Texture2D texture2DMotherShip;
+        Texture2D texture2DMotherShip1;
+        Texture2D texture2DMotherShip2;
+        Texture2D texture2DEnemy1;
+        DateTime stepTime = DateTime.Now;
+        TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
 
         public Game1()
         {
@@ -49,7 +62,12 @@ namespace LD18
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            texture2DMotherShip1 = texture2DMotherShip = Content.Load<Texture2D>("MotherShip1");
+            texture2DMotherShip2 = Content.Load<Texture2D>("MotherShip2");
+            texture2DBeam1 = texture2DBeam = Content.Load<Texture2D>("Beam1");
+            texture2DBeam2 = Content.Load<Texture2D>("Beam2");
+            texture2DBeam3 = Content.Load<Texture2D>("Beam3");
+            texture2DEnemy1 = Content.Load<Texture2D>("Enemy1");
         }
 
         /// <summary>
@@ -72,7 +90,20 @@ namespace LD18
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // TODO: Add your update logic here
+            if (stepTime < DateTime.Now)
+            {
+                if (texture2DBeam == texture2DBeam1)
+                {
+                    drawBeam2 = true;
+                    texture2DBeam = texture2DBeam2;
+                }
+                else
+                {
+                    drawBeam2 = false;
+                    texture2DBeam = texture2DBeam1;
+                }
+                stepTime = DateTime.Now.Add(animationTime);
+            }
 
             base.Update(gameTime);
         }
@@ -83,9 +114,18 @@ namespace LD18
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+            spriteBatch.Draw(texture2DBeam3, new Vector2(350, 200), Color.White);
+            spriteBatch.Draw(texture2DBeam1, new Vector2(400, 200), Color.White);
+            spriteBatch.Draw(texture2DMotherShip, new Vector2(350, 400), Color.White);
+            if (drawBeam2)
+            {
+                spriteBatch.Draw(texture2DMotherShip2, new Vector2(350, 400), Color.White);
+            }
+            spriteBatch.Draw(texture2DEnemy1, new Vector2(50, 40), Color.White);
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }

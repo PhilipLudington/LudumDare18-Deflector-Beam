@@ -1,3 +1,4 @@
+/* All Rights Reserved. Copyright 2010 Philip Ludington */
 using System;
 
 namespace LD18
