@@ -8,13 +8,27 @@ namespace LD18
 {
     public class Player
     {
+        public Vector2 Origin;
+        public float Angle;
+        public Body Body;
+        public int Health;
+
         public Player()
         {
             Coefficients coffecients = new Coefficients(/*restitution*/1, /*friction*/.5f);
-            CircleShape circleShape = new CircleShape(28, 7);
-            float mass = 1;
+            CircleShape circleShape = new CircleShape(80, 9);
+            float mass = 10000;
             Body = new Body(new PhysicsState(), circleShape, mass, coffecients, new Lifespan());
             Body.IsCollidable = true;
+            Body.Collided += new System.EventHandler<CollisionEventArgs>(Body_Collided);
+            Origin.X = 73;
+            Origin.Y = 73;
+            Health = 1000;
+        }
+
+        void Body_Collided(object sender, CollisionEventArgs e)
+        {
+            Health -= 10;
         }
         public Vector2 Position
         {
@@ -27,10 +41,13 @@ namespace LD18
                 Body.State.Position = new ALVector2D(0, value.X, value.Y);
             }
         }
-        public Body Body;
         public void Update()
         {
-            Body.ApplyImpulse(new Vector2D(0, 100));
+            Angle += 0.05f;
+            if (Angle > 360)
+            {
+                Angle -= 360;
+            }
         }
     }
 }
