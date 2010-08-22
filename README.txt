@@ -12,6 +12,7 @@ Ludum Dare is a 48 hour game development contest, see http://LudumDare.com
  - http://code.google.com/p/msysgit/
  - http://code.google.com/p/tortoisegit/
  - http://en.wikipedia.org/wiki/Paint_(software)
+ - http://code.google.com/p/physics2d/
  
 
 All Rights Reserved. Copyright 2010 Philip Ludington

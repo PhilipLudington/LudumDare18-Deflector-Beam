@@ -2,16 +2,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Media;
-using Microsoft.Xna.Framework.Net;
-using Microsoft.Xna.Framework.Storage;
+using Physics2DDotNet;
+using AdvanceMath;
 
 namespace LD18
 {
@@ -35,10 +30,11 @@ namespace LD18
         DateTime stepTime = DateTime.Now;
         TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
         Vector2 beamVector = new Vector2(422, 410);
-        float beamAngle = MathHelper.ToRadians(45);
-        float beamAngleSpin = MathHelper.ToRadians(0);
+        float beamAngle = Microsoft.Xna.Framework.MathHelper.ToRadians(45);
+        float beamAngleSpin = Microsoft.Xna.Framework.MathHelper.ToRadians(0);
         List<Bullet> bullets = new List<Bullet>();
         Random random = new Random(DateTime.Now.Millisecond);
+        PhysicsEngine engine = new PhysicsEngine();
 
         public Game1()
         {
@@ -54,13 +50,17 @@ namespace LD18
         /// </summary>
         protected override void Initialize()
         {
-            int randomBullets = random.Next(0, 50000);
+            // Pysics Simulation
+            engine.BroadPhase = new Physics2DDotNet.Detectors.SelectiveSweepDetector();
+            engine.Solver = new Physics2DDotNet.Solvers.SequentialImpulsesSolver();
+
+            int randomBullets = random.Next(0, 50);
             Bullet bullet;
             for (int x = 0; x < randomBullets; x++)
             {
                 bullet = new Bullet();
-                bullet.Position.X = random.Next(0, 800);
-                bullet.Position.Y = random.Next(0, 600);
+                bullet.Position = new Vector2(random.Next(0, 800), random.Next(0, 600));
+                engine.AddBody(bullet.Body);
                 bullets.Add(bullet);
             }
 
@@ -94,6 +94,7 @@ namespace LD18
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
+            engine.Clear();
         }
 
         /// <summary>
@@ -159,6 +160,7 @@ namespace LD18
                 bullet.Update();
                 if (bullet.Position.Y > 1000)
                 {
+                    bullet.Body.Lifetime.IsExpired = true;
                     deadBullets.Add(bullet);
                 }
             }
@@ -166,6 +168,8 @@ namespace LD18
             {
                 bullets.Remove(bullet);
             }
+
+            engine.Update((float)gameTime.ElapsedGameTime.TotalSeconds, (float)gameTime.ElapsedRealTime.TotalSeconds);
 
             base.Update(gameTime);
         }
@@ -187,6 +191,7 @@ namespace LD18
                 spriteBatch.Draw(texture2DMotherShip2, new Vector2(350, 400), Color.White);
             }
             spriteBatch.Draw(texture2DEnemy1, new Vector2(50, 40), Color.White);
+
             // Bullets
             foreach (Bullet bullet in bullets)
             {
