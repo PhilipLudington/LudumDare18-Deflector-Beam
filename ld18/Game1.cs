@@ -7,6 +7,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Physics2DDotNet;
 using AdvanceMath;
+using Physics2DDotNet.Joints;
+using System.Timers;
 
 namespace LD18
 {
@@ -15,9 +17,13 @@ namespace LD18
     /// </summary>
     public class Game1 : Microsoft.Xna.Framework.Game
     {
+        bool gameOver = false;
+        bool youWin = false;
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        bool drawBeam2 = false;
+        //bool drawBeam2 = false;
+        Texture2D texture2DGameOver;
+        Texture2D texture2DYouWin;
         Texture2D texture2DBackground;
         Texture2D texture2DHUD;
         Texture2D texture2DBeam;
@@ -30,16 +36,20 @@ namespace LD18
         Texture2D texture2DEnemy1;
         Texture2D texture2DBullet1;
         Texture2D dummyTexture;
-        DateTime stepTime = DateTime.Now;
-        TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
-        Vector2 beamVector = new Vector2(395, 480);
+        //DateTime stepTime = DateTime.Now;
+        //TimeSpan animationTime = new TimeSpan(0, 0, 0, 0, 400);
+        //Vector2 beamVector = new Vector2(395, 480);
+        Beam beam = null;
         float beamAngle = Microsoft.Xna.Framework.MathHelper.ToRadians(45);
         float beamAngleSpin = Microsoft.Xna.Framework.MathHelper.ToRadians(0);
         List<Bullet> bullets = new List<Bullet>();
-        Random random = new Random(DateTime.Now.Millisecond);
+        List<Enemy> enemies = new List<Enemy>();
+        public static Random random = new Random(DateTime.Now.Millisecond);
         PhysicsEngine engine = new PhysicsEngine();
-        Player player = new Player();
-        bool showCollisionRectangles = true;
+        Player player = null;
+        bool showCollisionRectangles = false;
+        bool[] waves;
+        DateTime enemyTimer;
 
         public Game1()
         {
@@ -55,29 +65,12 @@ namespace LD18
         /// </summary>
         protected override void Initialize()
         {
-            // Pysics Simulation
+            // Physics Simulation
             engine.BroadPhase = new Physics2DDotNet.Detectors.SelectiveSweepDetector();
             engine.Solver = new Physics2DDotNet.Solvers.SequentialImpulsesSolver();
 
-            int randomBullets = random.Next(0, 50);
-            Bullet bullet;
-            for (int x = 0; x < randomBullets; x++)
-            {
-                //bullet = new Bullet();
-                //bullet.Position = new Vector2(random.Next(0, 800), random.Next(0, 600));
-                //engine.AddBody(bullet.Body);
-                //bullets.Add(bullet);
-            }
-
-            // Special bullet for testing
-            bullet = new Bullet();
-            bullet.Position = new Vector2(375, 25);
-            engine.AddBody(bullet.Body);
-            bullets.Add(bullet);
-
-            player.Position = new Vector2(400, 525);
-            engine.AddBody(player.Body);
-            player.Body.ApplyImpulse(new Vector2D(0, 10));
+            // Setup and play
+            Restart();
 
             base.Initialize();
         }
@@ -93,8 +86,10 @@ namespace LD18
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            texture2DYouWin = Content.Load<Texture2D>("YouWin");
             texture2DBackground = Content.Load<Texture2D>("Background");
             texture2DHUD = Content.Load<Texture2D>("HUD");
+            texture2DGameOver = Content.Load<Texture2D>("GameOver");
 
             texture2DMotherShip1 = texture2DMotherShip = Content.Load<Texture2D>("MotherShip1");
             texture2DMotherShip2 = Content.Load<Texture2D>("MotherShip2");
@@ -134,67 +129,133 @@ namespace LD18
                 this.Exit();
             }
 
-            // Apply momentum to the spindle
-            if (keyboardState.IsKeyDown(Keys.C))
+            if (player.Health <= 0 || gameOver)
             {
-                beamAngleSpin += Math.Abs(beamAngleSpin) * .2f + .001f;
+                gameOver = true;
+
+                if (keyboardState.IsKeyDown(Keys.Space))
+                {
+                    Restart();
+                }
             }
-            else if (keyboardState.IsKeyDown(Keys.Z))
+            else if (youWin)
             {
-                beamAngleSpin -= Math.Abs(beamAngleSpin) * .2f + .001f;
+                if (keyboardState.IsKeyDown(Keys.Space))
+                {
+                    Restart();
+                }
             }
             else
             {
-                // Friction on track bean spindle
-                if (beamAngleSpin > 0)
+                // Apply momentum to the spindle
+                if (keyboardState.IsKeyDown(Keys.C))
                 {
-                    beamAngleSpin -= Math.Abs(beamAngleSpin) * .015f;
+                    //beamAngleSpin += Math.Abs(beamAngleSpin) * .2f + .001f;
+                    //beam.Body.State.Position.Angular += Math.Abs(beam.Body.State.Position.Angular) * .2f + .001f;
+                    beam.Body.ApplyTorque(1000000f);
                 }
-                else
+                else if (keyboardState.IsKeyDown(Keys.Z))
                 {
-                    beamAngleSpin += Math.Abs(beamAngleSpin) * .015f;
+                    //beamAngleSpin -= Math.Abs(beamAngleSpin) * .2f + .001f;
+                    //beam.Body.State.Position.Angular -= Math.Abs(beam.Body.State.Position.Angular) * .2f + .001f;
+                    beam.Body.ApplyTorque(-1000000f);
                 }
+                //else
+                //{
+                //    // Friction on track bean spindle
+                //    if (beamAngleSpin > 0)
+                //    {
+                //        beamAngleSpin -= Math.Abs(beamAngleSpin) * .015f;
+                //    }
+                //    else
+                //    {
+                //        beamAngleSpin += Math.Abs(beamAngleSpin) * .015f;
+                //    }
+                //}
+
+                // The momentum moves the spindle
+                beamAngle += beamAngleSpin;
+
+                //if (stepTime < DateTime.Now)
+                //{
+                //    if (texture2DBeam == texture2DBeam1)
+                //    {
+                //        drawBeam2 = true;
+                //        texture2DBeam = texture2DBeam2;
+                //    }
+                //    else
+                //    {
+                //        drawBeam2 = false;
+                //        texture2DBeam = texture2DBeam1;
+                //    }
+                //    stepTime = DateTime.Now.Add(animationTime);
+                //}
+
+                // Is it time for a new wave?
+                TimeSpan enemyTimerSpan = DateTime.Now - enemyTimer;
+                if (waves[1] == false && enemyTimerSpan > new TimeSpan(0, 0, 1))
+                {
+                    Wave1();
+                }
+                else if (waves[2] == false && enemyTimerSpan > new TimeSpan(0, 0, 5))
+                {
+                    Wave2();
+                }
+                else if (waves[3] == false && enemyTimerSpan > new TimeSpan(0, 0, 10))
+                {
+                    Wave3();
+                }
+                else if (waves[4] == false && enemyTimerSpan > new TimeSpan(0, 0, 13))
+                {
+                    Wave4();
+                }
+                else if (waves[5] == false && enemyTimerSpan > new TimeSpan(0, 0, 14))
+                {
+                    Wave5();
+                }
+                else if (waves[5] == true && enemyTimerSpan > new TimeSpan(0, 0, 35))
+                {
+                    youWin = true;
+                }
+
+                // Enemies
+                List<Enemy> deadEnemies = new List<Enemy>();
+                foreach (Enemy enemy in enemies)
+                {
+                    enemy.Update();
+                    if (enemy.Position.Y > 1000)
+                    {
+                        enemy.Kill();
+                        deadEnemies.Add(enemy);
+                    }
+                }
+                foreach (Enemy enemy in deadEnemies)
+                {
+                    enemies.Remove(enemy);
+                }
+
+                // Bullets
+                List<Bullet> deadBullets = new List<Bullet>();
+                foreach (Bullet bullet in bullets)
+                {
+                    bullet.Update();
+                    if (bullet.Position.Y > 1000)
+                    {
+                        bullet.Kill();
+                        deadBullets.Add(bullet);
+                    }
+                }
+                foreach (Bullet bullet in deadBullets)
+                {
+                    bullets.Remove(bullet);
+                }
+
+                // Player
+                player.Update();
+
+                // Physic engine
+                engine.Update((float)gameTime.ElapsedGameTime.TotalSeconds, (float)gameTime.ElapsedRealTime.TotalSeconds);
             }
-
-            // The momentum moves the spindle
-            beamAngle += beamAngleSpin;
-
-            if (stepTime < DateTime.Now)
-            {
-                if (texture2DBeam == texture2DBeam1)
-                {
-                    drawBeam2 = true;
-                    texture2DBeam = texture2DBeam2;
-                }
-                else
-                {
-                    drawBeam2 = false;
-                    texture2DBeam = texture2DBeam1;
-                }
-                stepTime = DateTime.Now.Add(animationTime);
-            }
-
-            // Bullets
-            List<Bullet> deadBullets = new List<Bullet>();
-            foreach (Bullet bullet in bullets)
-            {
-                bullet.Update();
-                if (bullet.Position.Y > 1000)
-                {
-                    bullet.Kill();
-                    deadBullets.Add(bullet);
-                }
-            }
-            foreach (Bullet bullet in deadBullets)
-            {
-                bullets.Remove(bullet);
-            }
-
-            // Player
-            player.Update();
-
-            // Physic engine
-            engine.Update((float)gameTime.ElapsedGameTime.TotalSeconds, (float)gameTime.ElapsedRealTime.TotalSeconds);
 
             base.Update(gameTime);
         }
@@ -212,14 +273,22 @@ namespace LD18
             // Background
             spriteBatch.Draw(texture2DBackground, new Vector2(0, 0), Color.White);
 
-            spriteBatch.Draw(texture2DBeam3, beamVector, null, Color.White, beamAngle, new Vector2(54, 274), 1, SpriteEffects.None, 1);
-            spriteBatch.Draw(texture2DBeam, beamVector, null, Color.White, beamAngle, new Vector2(54, 274), 1, SpriteEffects.None, 1);
+            // Tracker Beam
+            spriteBatch.Draw(texture2DBeam3, beam.Position, null, Color.White, beam.Angle, beam.Origin, 1, SpriteEffects.None, 1);
+            spriteBatch.Draw(texture2DBeam, beam.Position, null, Color.White, beam.Angle, beam.Origin, 1, SpriteEffects.None, 1);
+
+            // Player's Ship
             spriteBatch.Draw(texture2DMotherShip, player.Position, null, Color.White, player.Angle, player.Origin, 1, SpriteEffects.None, 1);
             //if (drawBeam2)
             //{
             //    spriteBatch.Draw(texture2DMotherShip2, player.Position, null, Color.White, 0, player.Origin, 1, SpriteEffects.None, 1);
             //}
-            spriteBatch.Draw(texture2DEnemy1, new Vector2(50, 40), Color.White);
+
+            // Enemies
+            foreach (Enemy enemy in enemies)
+            {
+                spriteBatch.Draw(texture2DEnemy1, enemy.Position, null, Color.White, enemy.Angle, enemy.Origin, 1f, SpriteEffects.None, 1);
+            }
 
             // Bullets
             foreach (Bullet bullet in bullets)
@@ -260,9 +329,38 @@ namespace LD18
             // HUD
             spriteBatch.Draw(texture2DHUD, new Vector2(0, 0), Color.White);
 
+            if (gameOver)
+            {
+                spriteBatch.Draw(texture2DGameOver, new Vector2(0, 0), Color.White);
+            }
+            else if (youWin)
+            {
+                spriteBatch.Draw(texture2DYouWin, new Vector2(0, 0), Color.White);
+            }
+
             spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+        public void AddBullet(float x, float y)
+        {
+            AddBullet((int)x, (int)y, 0);
+        }
+        public void AddBullet(float x, float y, float angle)
+        {
+            AddBullet((int)x, (int)y, (int)angle);
+        }
+        public void AddBullet(int x, int y)
+        {
+            AddBullet(x, y, 0);
+        }
+        public void AddBullet(int x, int y, int angle)
+        {
+            Bullet bullet = new Bullet();
+            bullet.Position = new Vector2(x, y);
+            bullet.Body.State.Position.Angular = angle;
+            engine.AddBody(bullet.Body);
+            bullets.Add(bullet);
         }
 
         private void DrawLine(Vector2 a, Vector2 b)
@@ -276,5 +374,80 @@ namespace LD18
 
             spriteBatch.Draw(dummyTexture, a, null, Color.Red, angle, Origin, Scale, SpriteEffects.None, 1.0f);
         }
+
+        private Enemy NewEnemy(int x, int y, int angle)
+        {
+            Enemy enemy = new Enemy(this, x, y);
+            enemy.Angle = angle;
+            engine.AddBody(enemy.Body);
+            enemies.Add(enemy);
+
+            return enemy;
+        }
+        private Enemy NewEnemy(int x, int y)
+        {
+            return NewEnemy(x, y, 0);
+        }
+        private void Restart()
+        {
+            engine.Clear();
+            bullets.Clear();
+            enemies.Clear();
+
+            player = new Player();
+            player.Position = new Vector2(400, 525);
+            engine.AddBody(player.Body);
+            player.Body.ApplyImpulse(new Vector2D(0, 10));
+
+            beam = new Beam(this, 395, 480);
+            engine.AddBody(beam.Body);
+            FixedHingeJoint fixedHingeJoint = new FixedHingeJoint(beam.Body, new Vector2D(395, 480), new Lifespan());
+            engine.AddJoint(fixedHingeJoint);
+
+            waves = new bool[] { false, false, false, false, false, false };
+
+            gameOver = false;
+            youWin = false;
+            enemyTimer = DateTime.Now;
+        }
+
+        private void Wave1()
+        {
+            NewEnemy(325, 100, 0);
+            waves[1] = true;
+        }
+        private void Wave2()
+        {
+            NewEnemy(325, 100);
+
+            NewEnemy(425, 100);
+
+            waves[2] = true;
+        }
+        private void Wave3()
+        {
+            NewEnemy(325, 100);
+
+            NewEnemy(425, 100);
+
+            waves[3] = true;
+        }
+        private void Wave4()
+        {
+            NewEnemy(325, 100);
+
+            NewEnemy(425, 100);
+
+            NewEnemy(100, 300, 0).Body.ApplyImpulse(new Vector2D(50, 0));
+
+            waves[4] = true;
+        }
+        private void Wave5()
+        {
+            NewEnemy(100, 200, 0).Body.ApplyImpulse(new Vector2D(25, 0));
+
+            waves[5] = true;
+        }
+
     }
 }

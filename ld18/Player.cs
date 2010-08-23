@@ -3,6 +3,7 @@ using Physics2DDotNet.Shapes;
 using Physics2DDotNet;
 using AdvanceMath;
 using Microsoft.Xna.Framework;
+using Physics2DDotNet.Ignorers;
 
 namespace LD18
 {
@@ -20,6 +21,8 @@ namespace LD18
             float mass = 10000;
             Body = new Body(new PhysicsState(), circleShape, mass, coffecients, new Lifespan());
             Body.IsCollidable = true;
+            Body.CollisionIgnorer = new PlayerIgnorer();
+            Body.Tag = "PlayerTag";
             Body.Collided += new System.EventHandler<CollisionEventArgs>(Body_Collided);
             Origin.X = 73;
             Origin.Y = 73;
@@ -47,6 +50,24 @@ namespace LD18
             if (Angle > 360)
             {
                 Angle -= 360;
+            }
+        }
+
+        public class PlayerIgnorer : Ignorer
+        {
+            public override bool BothNeeded
+            {
+                get { return false; }
+            }
+
+            protected override bool CanCollide(Body thisBody, Body otherBody, Ignorer other)
+            {
+                if (otherBody.Tag == (object)"BeamTag")
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }

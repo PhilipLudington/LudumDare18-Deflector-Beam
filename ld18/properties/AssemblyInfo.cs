@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LD18")]
-[assembly: AssemblyProduct("LD18")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyTitle("Deflector Beam")]
+[assembly: AssemblyProduct("LD18 - Deflector Beam")]
+[assembly: AssemblyDescription("Ludum Dare 18 - Enemies as Weapons")]
+[assembly: AssemblyCompany("Mr. Phil Games")]
 
 [assembly: AssemblyCopyright("Copyright ©  2010")]
 [assembly: AssemblyTrademark("")]
